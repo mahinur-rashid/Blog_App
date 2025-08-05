@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container" style="max-width:600px; margin:auto;">
+  <div class="card p-4 shadow-sm mb-4">
+    <h2 class="mb-3" style="font-weight:700; color:#2575fc;">Friends</h2>
+    <form method="POST" action="{{ url_for('send_friend_request_by_username') }}" class="d-flex mb-3 position-relative" autocomplete="off">
+      <div style="width:100%; position:relative;">
+        <input type="text" class="form-control me-2" name="username" placeholder="Search username to add" required autocomplete="off" style="width:100%;">
+      </div>
+      <button type="submit" class="btn btn-primary ms-2">Send Request</button>
+    </form>
+    <script src="/static/js/friends_autocomplete.js"></script>
+    <h4 class="mb-2">Your Friends</h4>
+    <ul class="list-group mb-3">
+      {% for friend in friends %}
+      <li class="list-group-item d-flex align-items-center">
+        <img src="{{ friend.avatar if friend.avatar else (friend.gender == 'female' and '/static/default_avatar_female.jpg' or '/static/default_avatar_male.jpg') }}" class="rounded-circle border me-3" width="54" height="54" style="object-fit:cover; border:2px solid #2575fc;">
+        <div>
+          <a href="{{ url_for('view_user_profile', user_id=friend._id) }}" style="font-weight:600; color:#2575fc; text-decoration:none;">{{ friend.username }}</a>
+        </div>
+      </li>
+      {% else %}
+      <li class="list-group-item text-muted">No friends yet.</li>
+      {% endfor %}
+    </ul>
+
+    <h4 class="mb-2">Friend Requests Sent</h4>
+    <ul class="list-group mb-3">
+      {% for req in sent_requests %}
+      <li class="list-group-item d-flex align-items-center">
+        <img src="{{ req.avatar }}" class="rounded-circle border me-3" width="40" height="40" style="object-fit:cover; border:2px solid #aaa;">
+        <div>
+          <a href="{{ url_for('view_user_profile', user_id=req.to_id) }}" style="font-weight:600; color:#2575fc; text-decoration:none;">{{ req.username }}</a>
+        </div>
+        <span class="badge bg-warning ms-2">Pending</span>
+      </li>
+      {% else %}
+      <li class="list-group-item text-muted">No sent requests.</li>
+      {% endfor %}
+    </ul>
+    {% if friend_requests %}
+    <h4 class="mb-2">Pending Friend Requests</h4>
+    <ul class="list-group">
+      {% for req in friend_requests %}
+      <li class="list-group-item d-flex align-items-center justify-content-between">
+        <div class="d-flex align-items-center">
+          <img src="{{ req.avatar }}" class="rounded-circle border me-2" width="40" height="40" style="object-fit:cover; border:2px solid #2575fc;">
+          <span style="font-weight:600; color:#2575fc;">{{ req.from_username }}</span>
+        </div>
+        <div>
+          <form method="POST" action="/friend_request/accept/{{ req._id }}" style="display:inline;">
+            <button type="submit" class="btn btn-success btn-sm">Accept</button>
+          </form>
+          <form method="POST" action="/friend_request/decline/{{ req._id }}" style="display:inline;">
+            <button type="submit" class="btn btn-danger btn-sm">Decline</button>
+          </form>
+        </div>
+      </li>
+      {% endfor %}
+    </ul>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

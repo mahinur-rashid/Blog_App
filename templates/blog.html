@@ -1,0 +1,22 @@
+{% extends 'base.html' %}
+{% block content %}
+<h2>New Blog</h2>
+<form method="POST">
+  <div class="mb-3">
+    <label for="title" class="form-label">Title</label>
+    <input type="text" class="form-control" id="title" name="title" required>
+  </div>
+  <div class="mb-3">
+    <label for="content" class="form-label">Content</label>
+    <textarea class="form-control" id="content" name="content" rows="8" required></textarea>
+  </div>
+  <div class="mb-3">
+    <label for="visibility" class="form-label">Visibility</label>
+    <select class="form-select" id="visibility" name="visibility">
+      <option value="public" selected>Public</option>
+      <option value="friends">Friends Only</option>
+    </select>
+  </div>
+  <button type="submit" class="btn btn-success">Publish</button>
+</form>
+{% endblock %}

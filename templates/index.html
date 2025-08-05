@@ -1,0 +1,95 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="d-flex align-items-center justify-content-between mb-4">
+  <h2>Recent Blogs</h2>
+  <div>
+    <!-- Notification bell for real-time messages -->
+    <span id="topbar-notification-icon" class="bi bi-bell" title="Notifications" style="font-size:1.7em; position:relative; cursor:pointer;">
+      <span id="topbar-notification-count" style="position:absolute; top:-8px; right:-8px; background:#dc3545; color:#fff; border-radius:50%; padding:2px 6px; font-size:0.8em; display:none; min-width:18px; text-align:center;"></span>
+    </span>
+  </div>
+</div>
+{% for blog in blogs %}
+  <div class="card mb-3">
+    <div class="card-body">
+      <h5 class="card-title">{{ blog.title }}</h5>
+      <p class="card-text">{{ blog.content[:200] }}{% if blog.content|length > 200 %}...{% endif %}</p>
+      <a href="/blog/{{ blog._id|string }}" class="btn btn-primary">Read More</a>
+      <a href="/blog/{{ blog._id|string }}" class="btn btn-outline-secondary ms-2">Comments ({{ blog.comment_count }})</a>
+      <form method="POST" action="/blog/{{ blog._id|string }}/upvote" style="display:inline; position:relative;">
+        <button type="submit" class="btn btn-link p-0 ms-2 upvote-btn" title="Upvote" data-blog-id="{{ blog._id|string }}">
+          <i class="bi bi-hand-thumbs-up-fill" style="color:green; font-size:1.3em;"></i>
+          <span style="color:green; font-weight:bold;">{{ blog.upvote_count }}</span>
+        </button>
+        <div class="vote-popup upvote-popup" style="display:none; position:absolute; left:0; top:2.2em; z-index:10; background:#fff; border:1px solid #ccc; border-radius:8px; box-shadow:0 2px 8px rgba(0,0,0,0.12); min-width:180px; padding:8px;">
+          <div style="font-weight:bold; color:green; margin-bottom:4px;">Upvoted by:</div>
+          {% for u in blog.upvoters %}
+            <div class="d-flex align-items-center mb-1">
+              <img src="{{ u.avatar }}" class="rounded-circle me-2" width="24" height="24" style="object-fit:cover; border:1px solid #2575fc;">
+              <span>{{ u.username }}</span>
+            </div>
+          {% else %}
+            <div class="text-muted">No upvotes yet.</div>
+          {% endfor %}
+        </div>
+      </form>
+      <form method="POST" action="/blog/{{ blog._id|string }}/downvote" style="display:inline; position:relative;">
+        <button type="submit" class="btn btn-link p-0 ms-2 downvote-btn" title="Downvote" data-blog-id="{{ blog._id|string }}">
+          <i class="bi bi-hand-thumbs-down-fill" style="color:red; font-size:1.3em;"></i>
+          <span style="color:red; font-weight:bold;">{{ blog.downvote_count }}</span>
+        </button>
+        <div class="vote-popup downvote-popup" style="display:none; position:absolute; left:0; top:2.2em; z-index:10; background:#fff; border:1px solid #ccc; border-radius:8px; box-shadow:0 2px 8px rgba(0,0,0,0.12); min-width:180px; padding:8px;">
+          <div style="font-weight:bold; color:red; margin-bottom:4px;">Downvoted by:</div>
+          {% for u in blog.downvoters %}
+            <div class="d-flex align-items-center mb-1">
+              <img src="{{ u.avatar }}" class="rounded-circle me-2" width="24" height="24" style="object-fit:cover; border:1px solid #ff0000;">
+              <span>{{ u.username }}</span>
+            </div>
+          {% else %}
+            <div class="text-muted">No downvotes yet.</div>
+          {% endfor %}
+        </div>
+      </form>
+<script>
+document.querySelectorAll('.upvote-btn').forEach(btn => {
+  const parent = btn.parentElement;
+  const popup = parent.querySelector('.upvote-popup');
+  btn.addEventListener('mouseenter', function() {
+    if (popup) popup.style.display = 'block';
+  });
+  btn.addEventListener('mouseleave', function() {
+    if (popup) popup.style.display = 'none';
+  });
+  parent.addEventListener('mouseleave', function() {
+    if (popup) popup.style.display = 'none';
+  });
+});
+document.querySelectorAll('.downvote-btn').forEach(btn => {
+  const parent = btn.parentElement;
+  const popup = parent.querySelector('.downvote-popup');
+  btn.addEventListener('mouseenter', function() {
+    if (popup) popup.style.display = 'block';
+  });
+  btn.addEventListener('mouseleave', function() {
+    if (popup) popup.style.display = 'none';
+  });
+  parent.addEventListener('mouseleave', function() {
+    if (popup) popup.style.display = 'none';
+  });
+});
+</script>
+      {% if current_user.is_authenticated and current_user.id == blog.author._id|string %}
+        <form method="POST" action="/blog/{{ blog._id|string }}/delete" style="display:inline;">
+          <button type="submit" class="btn btn-danger btn-sm ms-2">Delete</button>
+        </form>
+      {% endif %}
+      <p class="card-text d-flex align-items-center"><small class="text-muted">
+        <img src="{{ blog.author.avatar if blog.author.avatar else (blog.author.gender == 'female' and '/static/default_avatar_female.jpg' or '/static/default_avatar_male.jpg') }}" class="rounded-circle me-2" width="32" height="32" style="object-fit:cover; border:2px solid #2575fc;">
+        By <a href="/user/{{ blog.author._id|string }}" style="text-decoration:none; color:#2575fc; font-weight:bold;">{{ blog.author.username }}</a> on {{ blog.timestamp.strftime('%Y-%m-%d %H:%M') if blog.timestamp else '' }}
+      </small></p>
+    </div>
+  </div>
+{% else %}
+  <p>No blogs yet.</p>
+{% endfor %}
+{% endblock %}

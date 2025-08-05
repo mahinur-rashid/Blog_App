@@ -1,0 +1,517 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="messenger-container" style="height: 85vh; display: flex; background: #f5f6fa; border-radius: 18px; box-shadow: 0 4px 24px rgba(0,0,0,0.08); overflow: hidden;" data-userid="{{ current_user.id }}">
+  <!-- Sidebar -->
+  <div class="messenger-sidebar" style="width: 340px; background: #fff; border-right: 1px solid #e6e6e6; display: flex; flex-direction: column;">
+    <div class="p-3" style="border-bottom: 1px solid #e6e6e6;">
+      <input type="text" id="user-search-input" class="form-control" placeholder="Search users to message..." autocomplete="off">
+      <div id="user-search-results" class="list-group mt-2" style="max-height:180px; overflow-y:auto;"></div>
+    </div>
+    <div class="p-4 pb-2 d-flex align-items-center justify-content-between" style="border-bottom: 1px solid #e6e6e6;">
+      <h3 style="font-weight:700; color:#2575fc; margin-bottom:0;">Messenger</h3>
+      <span id="chat-topbar-alert" class="badge bg-danger ms-2" style="display:none;">New</span>
+    </div>
+    <div class="list-group list-group-flush" id="chat-options">
+      <div class="list-group-item list-group-item-action user-item d-flex align-items-center" data-userid="global" style="cursor:pointer; background: #f8f9fa;" id="global-chat-item" tabindex="0">
+        <i class="bi bi-globe me-2"></i> <span style="font-weight:600;">Global Chat</span>
+      </div>
+    </div>
+    <div class="px-4 pt-3 pb-1 text-muted" style="font-size:0.95em; font-weight:600;">Friends</div>
+    <div id="friend-list" class="list-group list-group-flush px-2" style="overflow-y:auto;">
+      {% for user in users if user.is_friend %}
+      <div class="list-group-item list-group-item-action user-item d-flex align-items-center justify-content-between mb-1" data-userid="{{ user._id }}" data-username="{{ user.username }}" style="cursor:pointer; border-radius:12px;" tabindex="0">
+        <div class="d-flex align-items-center">
+          <img src="{{ user.avatar_url or (user.gender == 'female' and '/static/default_avatar_female.png' or '/static/default_avatar_male.png') }}" class="rounded-circle me-2" width="44" height="44" style="border:2px solid #e6e6e6;">
+          <div>
+          <span style="font-weight:600; font-size:1.1em;">{{ user.username }}</span>
+      {% if user.unread_count and user.unread_count > 0 %}
+        <span class="badge bg-danger ms-2 unread-badge">{{ user.unread_count }}</span>
+      {% else %}
+        <span class="badge bg-danger ms-2 unread-badge" style="display:none;">0</span>
+      {% endif %}<br>
+            <span class="text-muted" style="font-size:0.9em;">{{ user.last_message or '' }}</span>
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    <div class="px-4 pt-3 pb-1 text-muted" style="font-size:0.95em; font-weight:600;">Others</div>
+    <div id="other-list" class="list-group list-group-flush px-2" style="overflow-y:auto; flex:1;">
+      {% for user in users if not user.is_friend and not user.has_messaged_me %}
+      <div class="list-group-item list-group-item-action user-item d-flex align-items-center justify-content-between mb-1" data-userid="{{ user._id }}" data-username="{{ user.username }}" style="cursor:pointer; border-radius:12px;" tabindex="0">
+        <div class="d-flex align-items-center">
+          <img src="{{ user.avatar_url or (user.gender == 'female' and '/static/default_avatar_female.png' or '/static/default_avatar_male.png') }}" class="rounded-circle me-2" width="44" height="44" style="border:2px solid #e6e6e6;">
+          <div>
+            <span style="font-weight:600; font-size:1.1em;">{{ user.username }}</span><br>
+            <span class="text-muted" style="font-size:0.9em;">{{ user.last_message or '' }}</span>
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    <div class="px-4 pt-3 pb-1 text-muted" style="font-size:0.95em; font-weight:600;">Message Requests</div>
+    <div id="message-request-list" class="list-group list-group-flush px-2" style="overflow-y:auto; flex:1;">
+      {% for user in message_requests %}
+      <div class="list-group-item list-group-item-action user-item d-flex align-items-center justify-content-between mb-1" data-userid="{{ user._id }}" data-username="{{ user.username }}" style="cursor:pointer; border-radius:12px; background:#fffbe6;" tabindex="0">
+        <div class="d-flex align-items-center">
+          <img src="{{ user.avatar_url or (user.gender == 'female' and '/static/default_avatar_female.png' or '/static/default_avatar_male.png') }}" class="rounded-circle me-2" width="44" height="44" style="border:2px solid #e6e6e6;">
+          <div>
+            <span style="font-weight:600; font-size:1.1em; color:#d97706;">{{ user.username }}</span><br>
+            <span class="text-muted" style="font-size:0.9em;">{{ user.last_message or '' }}</span>
+          </div>
+        </div>
+        <span class="badge bg-warning ms-2">Request</span>
+      </div>
+      {% else %}
+      <div class="list-group-item text-muted">No message requests.</div>
+      {% endfor %}
+    </div>
+  </div>
+  <!-- Chat Area -->
+  <div class="messenger-chat" style="flex:1; display:flex; flex-direction:column; background:#f8f9fa;">
+    <div id="chat-header" class="d-flex align-items-center px-4 py-3" style="border-bottom:1px solid #e6e6e6; min-height:70px;"></div>
+    <div id="chat-box" class="flex-grow-1 px-4 py-3" style="overflow-y:auto;"></div>
+    <div id="notification-area" class="px-4">
+      <div id="pending-messages-bar" style="display:none; background:#ffe066; color:#333; border-radius:8px; padding:8px 16px; margin-bottom:8px; font-weight:600;"></div>
+    </div>
+    <form id="chat-form" class="d-flex align-items-center px-4 py-3" autocomplete="off" style="border-top:1px solid #e6e6e6; background:#fff;">
+      <input id="chat-input" type="text" class="form-control me-2" placeholder="Type a message..." autocomplete="off" style="border-radius:24px;">
+      <button type="submit" class="btn btn-primary px-4" style="border-radius:24px;">Send</button>
+    </form>
+    <button id="delete-conversation" class="btn btn-outline-danger mt-2 mx-4" style="display:none; align-self:flex-end;">Delete Conversation</button>
+  </div>
+</div>
+<script src="/static/js/socket.io.js"></script>
+<script>
+// Messenger notification state
+let chatNotifications = {};
+let activeChatUserId = null;
+let activeChatUsername = '';
+let activeChatAvatar = '';
+let isGlobalChat = false;
+if (typeof socket === 'undefined') {
+  var socket = io();
+}
+function renderChatHeader(username, avatar) {
+  const header = document.getElementById('chat-header');
+  header.innerHTML = `<img src="${avatar}" class="rounded-circle me-2" width="44" height="44" style="border:2px solid #2575fc;"> <span style="font-weight:700; font-size:1.2em; color:#2575fc;">${username}</span><span id="chat-header-unread" class="badge bg-danger ms-2" style="display:none;"></span>`;
+}
+function renderChatBox(messages, avatar) {
+  const chatBox = document.getElementById('chat-box');
+  chatBox.innerHTML = '';
+  const myId = document.querySelector('.messenger-container').getAttribute('data-userid');
+  const currentAvatar = document.querySelector('.navbar [href="/profile"] img')?.src || avatar;
+    // Find latest unread message index for receiver
+    let latestUnreadIdx = -1;
+    for (let i = messages.length - 1; i >= 0; i--) {
+      if (!messages[i].seen && messages[i].sender_id !== myId) {
+        latestUnreadIdx = i;
+        break;
+      }
+    }
+    messages.forEach((msg, idx) => {
+      const isMe = msg.sender_id === myId;
+      const msgDiv = document.createElement('div');
+      msgDiv.className = 'd-flex align-items-end mb-2';
+      let seenIcon = '';
+      if (msg.seen && isMe) {
+        seenIcon = `<i class="bi bi-check2-all" style="color:#28a745; font-size:1.2em; margin-left:6px; vertical-align:middle;" title="Seen" id="seen-icon-${msg._id}"></i>`;
+      } else if (isMe) {
+        seenIcon = `<i class="bi bi-check2" style="color:#b3b3b3; font-size:1.2em; margin-left:6px; vertical-align:middle;" title="Delivered" id="seen-icon-${msg._id}"></i>`;
+      }
+      let deleteBtn = '';
+      if (isMe) {
+        deleteBtn = `<button class="btn btn-sm btn-link p-0 delete-msg-btn" data-msgid="${msg._id}" title="Delete" style="color:#dc3545; margin-right:8px;"><i class="bi bi-trash"></i></button>`;
+      }
+      let bubbleStyle = '';
+      if (!isMe && idx === latestUnreadIdx) {
+        bubbleStyle = 'font-weight:bold;';
+      }
+      // Use sender's avatar for global chat, otherwise use normal logic
+      let avatarSrc = avatar;
+      if (isGlobalChat && msg.avatar_url) {
+        avatarSrc = msg.avatar_url;
+      } else if (!isMe) {
+        avatarSrc = activeChatAvatar;
+      } else {
+        avatarSrc = currentAvatar;
+      }
+      if (isMe) {
+        msgDiv.innerHTML = `
+          <div style="flex:1; display:flex; justify-content:flex-end; align-items:end;">
+            <div style="display:flex; align-items:end;">
+              ${deleteBtn}
+              ${seenIcon}
+              <div style="background:#2575fc; color:#fff; border-radius:16px; padding:8px 16px; max-width:420px; word-break:break-word; white-space:pre-wrap; margin-right:8px; box-sizing:border-box; position:relative; ${bubbleStyle}">
+                <b>${msg.sender_username}:</b> ${msg.content}
+              </div>
+              <img src="${avatarSrc}" class="rounded-circle" width="32" height="32" style="border:2px solid #e6e6e6;">
+            </div>
+          </div>
+        `;
+      } else {
+        msgDiv.innerHTML = `
+          <div style="flex:1; display:flex; justify-content:flex-start; align-items:end;">
+            <div style="display:flex; align-items:end;">
+              <img src="${avatarSrc}" class="rounded-circle" width="32" height="32" style="border:2px solid #e6e6e6; margin-right:8px;">
+              <div style="background:#fff; color:#333; border-radius:16px; padding:8px 16px; max-width:420px; word-break:break-word; white-space:pre-wrap; box-sizing:border-box; position:relative; ${bubbleStyle}">
+                <b>${msg.sender_username}:</b> ${msg.content}
+              </div>
+            </div>
+          </div>
+        `;
+        // If message is not seen and current user is receiver, emit mark_seen
+        if (!msg.seen && msg.sender_id !== myId) {
+          socket.emit('mark_seen', { msg_id: msg._id });
+        }
+      }
+      chatBox.appendChild(msgDiv);
+    });
+    // Add delete event listeners for individual messages
+    chatBox.querySelectorAll('.delete-msg-btn').forEach(btn => {
+      btn.onclick = function() {
+        const msgId = btn.getAttribute('data-msgid');
+        if (confirm('Delete this message?')) {
+          fetch(`/chat/message/${msgId}/delete`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' }
+          })
+          .then(res => res.json())
+          .then(result => {
+            if (result.status === 'success') {
+              btn.closest('.d-flex.align-items-end.mb-2').remove();
+            } else {
+              alert(result.message || 'Failed to delete message.');
+            }
+          });
+        }
+      };
+    });
+  chatBox.scrollTop = chatBox.scrollHeight;
+}
+function loadChat(userId, username, avatar, global=false) {
+  // Show delete conversation button for non-global chats
+  const deleteConvBtn = document.getElementById('delete-conversation');
+  if (userId !== 'global') {
+    deleteConvBtn.style.display = '';
+    deleteConvBtn.onclick = function() {
+      if (confirm('Delete entire conversation with ' + username + '?')) {
+        fetch(`/chat/conversation/${userId}/delete`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' }
+        })
+        .then(res => res.json())
+        .then(result => {
+          if (result.status === 'success') {
+            document.getElementById('chat-box').innerHTML = '';
+            alert('Conversation deleted.');
+          } else {
+            alert(result.message || 'Failed to delete conversation.');
+          }
+        });
+      }
+    };
+  } else {
+    deleteConvBtn.style.display = 'none';
+    deleteConvBtn.onclick = null;
+  }
+  activeChatUserId = userId;
+  activeChatUsername = username;
+  activeChatAvatar = avatar;
+  isGlobalChat = global;
+  renderChatHeader(username, avatar);
+  // Remove unread alert and topbar badge when chat is opened
+  document.getElementById('pending-messages-bar').style.display = 'none';
+  const chatTopbarAlert = document.getElementById('chat-topbar-alert');
+  if (chatTopbarAlert) {
+    chatTopbarAlert.style.display = 'none';
+    chatTopbarAlert.textContent = '';
+  }
+  fetch('/chat/history/' + userId)
+    .then(res => res.json())
+    .then(data => {
+      renderChatBox(data.messages, avatar);
+      // Show unread count in chat header
+      const chatHeaderUnread = document.getElementById('chat-header-unread');
+      if (chatHeaderUnread) {
+        if (data.unread_count && data.unread_count > 0) {
+          chatHeaderUnread.textContent = data.unread_count + ' unread';
+          chatHeaderUnread.style.display = '';
+        } else {
+          chatHeaderUnread.style.display = 'none';
+        }
+      }
+      // Only show unread alert and badge if current user is receiver (not sender)
+      const myId = document.querySelector('.messenger-container').getAttribute('data-userid');
+      if (userId !== myId) {
+        if (data.unread_count && data.unread_count > 0) {
+          // Highlight receiver (current user) in sidebar
+          document.querySelectorAll('.user-item[data-userid="' + myId + '"]').forEach(item => {
+            item.classList.add('active');
+          });
+          // Update unread badge in sidebar for current user
+          document.querySelectorAll('.user-item[data-userid="' + myId + '"] .unread-badge').forEach(badge => {
+            badge.style.display = '';
+            badge.textContent = data.unread_count;
+          });
+          // Update top bar notification icon
+          const notifIcon = document.getElementById('topbar-notification-icon');
+          if (notifIcon) {
+            notifIcon.classList.add('text-danger');
+            notifIcon.setAttribute('title', `New message from ${username}!`);
+          }
+          // Show alert in chat header username section
+          const chatHeader = document.getElementById('chat-header');
+          if (chatHeader) {
+            chatHeader.innerHTML += `<span class="badge bg-danger ms-2">${data.unread_count} unread</span>`;
+          }
+        } else {
+          document.querySelectorAll('.user-item[data-userid="' + myId + '"]').forEach(item => {
+            item.classList.remove('active');
+          });
+          document.querySelectorAll('.user-item[data-userid="' + myId + '"] .unread-badge').forEach(badge => {
+            badge.style.display = 'none';
+          });
+        }
+      } else {
+        document.querySelectorAll('.user-item[data-userid="' + myId + '"]').forEach(item => {
+          item.classList.remove('active');
+        });
+        document.querySelectorAll('.user-item[data-userid="' + myId + '"] .unread-badge').forEach(badge => {
+          badge.style.display = 'none';
+        });
+      }
+    });
+// Real-time chat update: listen for new messages
+socket.on('new_message', function(data) {
+  // Only receiver sees unread alert, badge, and notification
+  const myId = document.querySelector('.messenger-container').getAttribute('data-userid');
+  if (data.receiver_id === myId) {
+    // Show unread alert in chatbox
+    document.getElementById('pending-messages-bar').style.display = '';
+    document.getElementById('pending-messages-bar').textContent = `You have new unread message(s) from ${data.sender_username}.`;
+    // Highlight sender in sidebar (the user you are chatting with)
+    document.querySelectorAll('.user-item[data-userid="' + data.sender_id + '"]').forEach(item => {
+      item.classList.add('active');
+      // Update unread badge for sender
+      let badge = item.querySelector('.unread-badge');
+      if (badge) {
+        badge.style.display = '';
+        badge.textContent = (parseInt(badge.textContent) || 0) + 1;
+      }
+    });
+    // Update top bar notification icon
+    const notifIcon = document.getElementById('topbar-notification-icon');
+    if (notifIcon) {
+      notifIcon.classList.add('text-danger');
+      notifIcon.setAttribute('title', `New message from ${data.sender_username}!`);
+    }
+    // Show alert in chat header username section
+    const chatHeader = document.getElementById('chat-header');
+    if (chatHeader) {
+      chatHeader.innerHTML += `<span class=\"badge bg-danger ms-2\">unread</span>`;
+    }
+    // Show new message alert in Chat topbar
+    const chatTopbarAlert = document.getElementById('chat-topbar-alert');
+    if (chatTopbarAlert) {
+      let currentCount = parseInt(chatTopbarAlert.textContent) || 0;
+      chatTopbarAlert.textContent = (currentCount + 1) + ' New';
+      chatTopbarAlert.style.display = '';
+    }
+    // Update Messenger notification state
+    if (data.sender_id && data.sender_username) {
+      if (!chatNotifications[data.sender_id]) {
+        chatNotifications[data.sender_id] = {
+          username: data.sender_username,
+          count: 1
+        };
+      } else {
+        chatNotifications[data.sender_id].count += 1;
+      }
+    }
+    // Update chat tab badge and dropdown
+    const chatTab = document.getElementById('chat-navbar-link');
+    const chatBadge = document.getElementById('chat-navbar-badge');
+    const chatNotifList = document.getElementById('chat-notification-list');
+    let totalUnread = Object.values(chatNotifications).reduce((sum, n) => sum + n.count, 0);
+    if (chatTab && chatBadge) {
+      chatBadge.style.display = totalUnread > 0 ? '' : 'none';
+      chatBadge.textContent = totalUnread > 0 ? totalUnread + ' New' : '';
+      chatTab.classList.add('text-danger');
+      chatTab.setAttribute('title', `New message!`);
+    }
+    if (chatNotifList) {
+      chatNotifList.innerHTML = '';
+      if (totalUnread === 0) {
+        chatNotifList.innerHTML = '<li><span class="dropdown-item-text text-muted">No new messages</span></li>';
+      } else {
+        Object.entries(chatNotifications).forEach(([senderId, info]) => {
+          chatNotifList.innerHTML += `<li><a class="dropdown-item d-flex align-items-center" href="#" data-userid="${senderId}" onclick="openChatFromNotif('${senderId}')"><span style="font-weight:600; color:#2575fc;">${info.username}</span><span class="badge bg-danger ms-2">${info.count}</span></a></li>`;
+        });
+      }
+    }
+  }
+  // Real-time update: if chat is open with sender, append message immediately
+  if (activeChatUserId === data.sender_id) {
+    // Only append if chat is open with sender
+    const chatBox = document.getElementById('chat-box');
+    const msgDiv = document.createElement('div');
+    msgDiv.className = 'd-flex align-items-end mb-2';
+    msgDiv.innerHTML = `
+      <div style="flex:1; display:flex; justify-content:flex-start; align-items:end;">
+        <div style="display:flex; align-items:end;">
+          <img src="${activeChatAvatar}" class="rounded-circle" width="32" height="32" style="border:2px solid #e6e6e6; margin-right:8px;">
+          <div style="background:#fff; color:#333; border-radius:16px; padding:8px 16px; max-width:420px; word-break:break-word; white-space:pre-wrap; box-sizing:border-box; position:relative;">
+            <b>${data.sender_username}:</b> ${data.content}
+          </div>
+        </div>
+      </div>
+    `;
+    chatBox.appendChild(msgDiv);
+    chatBox.scrollTop = chatBox.scrollHeight;
+    // Remove unread alert and topbar badge when message is seen in open chat
+    document.getElementById('pending-messages-bar').style.display = 'none';
+    const chatTopbarAlert = document.getElementById('chat-topbar-alert');
+    if (chatTopbarAlert) {
+      chatTopbarAlert.style.display = 'none';
+      chatTopbarAlert.textContent = '';
+    }
+  }
+});
+// Listen for message seen event
+socket.on('message_seen', function(data) {
+  // Update seen indicator for messages
+  const icon = document.getElementById('seen-icon-' + data.msg_id);
+  if (icon) {
+    icon.className = 'bi bi-check2-all';
+    icon.style.color = '#28a745';
+    icon.title = 'Seen';
+  }
+});
+}
+// Make all sidebar users clickable: Friends, Others, Message Requests
+['#friend-list', '#other-list', '#message-request-list'].forEach(function(listId) {
+  document.querySelectorAll(listId + ' .user-item[data-userid]').forEach(function(item) {
+    item.onclick = function() {
+      var userId = item.getAttribute('data-userid');
+      var username = item.getAttribute('data-username');
+      var avatar = item.querySelector('img').src;
+      // Remove highlight and unread badge for this user when chat is opened
+      document.querySelectorAll('.user-item[data-userid="' + userId + '"]').forEach(function(userItem) {
+        userItem.classList.remove('active');
+        let badge = userItem.querySelector('.unread-badge');
+        if (badge) {
+          badge.style.display = 'none';
+          badge.textContent = '0';
+        }
+      });
+      // Remove chat tab highlight and badge, and clear notification for this user
+      const chatTab = document.getElementById('chat-navbar-link');
+      const chatBadge = document.getElementById('chat-navbar-badge');
+      const chatNotifList = document.getElementById('chat-notification-list');
+      if (chatTab && chatBadge) {
+        chatTab.classList.remove('text-danger');
+        chatTab.removeAttribute('title');
+        if (chatNotifications[userId]) delete chatNotifications[userId];
+        let totalUnread = Object.values(chatNotifications).reduce((sum, n) => sum + n.count, 0);
+        chatBadge.style.display = totalUnread > 0 ? '' : 'none';
+        chatBadge.textContent = totalUnread > 0 ? totalUnread + ' New' : '';
+        if (chatNotifList) {
+          chatNotifList.innerHTML = '';
+          if (totalUnread === 0) {
+            chatNotifList.innerHTML = '<li><span class="dropdown-item-text text-muted">No new messages</span></li>';
+          } else {
+            Object.entries(chatNotifications).forEach(([senderId, info]) => {
+              chatNotifList.innerHTML += `<li><a class="dropdown-item d-flex align-items-center" href="#" data-userid="${senderId}" onclick="openChatFromNotif('${senderId}')"><span style="font-weight:600; color:#2575fc;">${info.username}</span><span class="badge bg-danger ms-2">${info.count}</span></a></li>`;
+            });
+          }
+        }
+      }
+      loadChat(userId, username, avatar, false);
+    };
+  });
+});
+// Function to open chat from notification dropdown
+function openChatFromNotif(userId) {
+  // Find the user in sidebar and trigger click
+  var userItem = document.querySelector('.user-item[data-userid="' + userId + '"]');
+  if (userItem) {
+    userItem.click();
+  }
+}
+document.getElementById('global-chat-item').onclick = function() {
+loadChat('global', 'Global Chat', '/static/Default_global_img.jpg', true);
+};
+document.getElementById('chat-form').onsubmit = function(e) {
+  e.preventDefault();
+  const input = document.getElementById('chat-input');
+  const content = input.value;
+  if (!content.trim() || !activeChatUserId) return;
+  socket.emit('send_message', {
+    receiver: activeChatUsername,
+    receiver_id: activeChatUserId,
+    content: content,
+    is_global: isGlobalChat
+  });
+  input.value = '';
+  // Optionally, append the message immediately
+  const chatBox = document.getElementById('chat-box');
+  const myId = document.querySelector('.messenger-container').getAttribute('data-userid');
+  const msgDiv = document.createElement('div');
+  msgDiv.className = 'd-flex align-items-end mb-2';
+  const currentAvatar = document.querySelector('.navbar [href="/profile"] img')?.src || activeChatAvatar;
+  msgDiv.innerHTML = `
+    <div style="flex:1; display:flex; justify-content:flex-end; align-items:end;">
+      <div style="display:flex; align-items:end;">
+        <div style="background:#2575fc; color:#fff; border-radius:16px; padding:8px 16px; max-width:70%; margin-right:8px;">
+          <b>You:</b> ${content}
+        </div>
+        <img src="${currentAvatar}" class="rounded-circle" width="32" height="32" style="border:2px solid #e6e6e6;">
+      </div>
+    </div>
+  `;
+  chatBox.appendChild(msgDiv);
+  chatBox.scrollTop = chatBox.scrollHeight;
+};
+document.getElementById('user-search-input').addEventListener('input', function() {
+  const q = this.value.trim();
+  const resultsDiv = document.getElementById('user-search-results');
+  resultsDiv.innerHTML = '';
+  if (q.length < 2) return;
+  fetch(`/api/user_search?q=${encodeURIComponent(q)}`)
+    .then(res => res.json())
+    .then(users => {
+      users.forEach(user => {
+        const item = document.createElement('div');
+        item.className = 'list-group-item list-group-item-action d-flex align-items-center user-suggestion';
+        item.style.cursor = 'pointer';
+        item.setAttribute('data-id', user.id);
+        item.setAttribute('data-username', user.username);
+        item.setAttribute('data-avatar', user.avatar);
+        item.innerHTML = `<img src="${user.avatar}" class="rounded-circle me-2" width="36" height="36" style="border:2px solid #e6e6e6;"> <span style="font-weight:600;">${user.username}</span>`;
+        item.onclick = function() {
+          loadChat(user.id, user.username, user.avatar, false);
+        };
+        resultsDiv.appendChild(item);
+      });
+    });
+});
+</script>
+<style>
+  .messenger-container { font-family: 'Segoe UI', 'Roboto', Arial, sans-serif; }
+  .user-item.active, #global-chat-item.active {
+    background: linear-gradient(90deg, #6a11cb 0%, #2575fc 100%) !important;
+    color: #fff !important;
+    font-weight: bold;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(106,17,203,0.08);
+  }
+  .user-item {
+    transition: background 0.2s, color 0.2s;
+    margin-bottom: 2px;
+  }
+  #chat-box::-webkit-scrollbar { width: 8px; background: #e6e6e6; }
+  #chat-box::-webkit-scrollbar-thumb { background: #b3b3b3; border-radius: 8px; }
+  .messenger-chat { box-shadow: 0 2px 8px rgba(106,17,203,0.04); }
+</style>
+{% endblock %}

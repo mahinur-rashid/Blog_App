@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>{{ user.username }}'s Profile</h2>
+<img src="{{ user.avatar if user.avatar and user.avatar|length > 10 else (user.gender == 'female' and '/static/default_avatar_female.jpg' or '/static/default_avatar_male.jpg') }}" width="100" height="100" style="object-fit:cover; border-radius:50%; border:2px solid #2575fc;"><br>
+<p>Gender: {{ user.gender if user.gender else 'Not set' }}</p>
+<p>Email: {{ user.email }}</p>
+<hr>
+<h3>{{ user.username }}'s Blogs</h3>
+{% if blogs and blogs|length > 0 %}
+  <div class="row">
+    {% for blog in blogs %}
+      <div class="col-md-6 mb-4">
+        <div class="card">
+          <div class="card-body">
+            <h5 class="card-title">{{ blog.title }}</h5>
+            <p class="card-text">{{ blog.content }}</p>
+            <p>
+              <span class="badge bg-primary">Comments: {{ blog.comment_count }}</span>
+              <span class="badge bg-success">Upvotes: {{ blog.upvote_count }}</span>
+              <span class="badge bg-danger">Downvotes: {{ blog.downvote_count }}</span>
+            </p>
+            <a href="{{ url_for('view_blog', blog_id=blog._id) }}" class="btn btn-outline-info btn-sm">View Blog</a>
+          </div>
+        </div>
+      </div>
+    {% endfor %}
+  </div>
+{% else %}
+  <p>No blogs found for this user.</p>
+{% endif %}
+{% endblock %}
+<hr>
+<h3>{{ user.username }}'s Blogs</h3>
+{% if blogs and blogs|length > 0 %}
+  <div class="row">
+    {% for blog in blogs %}
+      <div class="col-md-6 mb-4">
+        <div class="card">
+          <div class="card-body">
+            <h5 class="card-title">{{ blog.title }}</h5>
+            <p class="card-text">{{ blog.content }}</p>
+            <p>
+              <span class="badge bg-primary">Comments: {{ blog.comment_count }}</span>
+              <span class="badge bg-success">Upvotes: {{ blog.upvote_count }}</span>
+              <span class="badge bg-danger">Downvotes: {{ blog.downvote_count }}</span>
+            </p>
+            <a href="{{ url_for('view_blog', blog_id=blog._id) }}" class="btn btn-outline-info btn-sm">View Blog</a>
+          </div>
+        </div>
+      </div>
+    {% endfor %}
+  </div>
+{% else %}
+  <p>No blogs found for this user.</p>
+{% endif %}

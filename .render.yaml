@@ -1,0 +1,13 @@
+services:
+  - type: web
+    name: blog-app
+    env: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn app:app
+    envVars:
+      - key: FLASK_ENV
+        value: production
+      - key: SECRET_KEY
+        value: "your-secret-key"
+      - key: MONGO_URI
+        value: 'your-mongodb-uri-here'

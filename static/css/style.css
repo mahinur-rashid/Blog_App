@@ -1,0 +1,107 @@
+body {
+    background: url('https://images.unsplash.com/photo-1465101046530-73398c7f28ca?auto=format&fit=crop&w=1500&q=80') no-repeat center center fixed;
+    background-size: cover;
+    font-family: 'Segoe UI', 'Roboto', Arial, sans-serif;
+}
+
+.navbar {
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    background: linear-gradient(90deg, #6a11cb 0%, #2575fc 100%);
+}
+.navbar-brand {
+    color: #fff !important;
+    font-weight: bold;
+    font-size: 1.7rem;
+}
+
+.container {
+    max-width: 900px;
+    background: rgba(255,255,255,0.92);
+    border-radius: 16px;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.10);
+    padding: 2rem 2rem 1rem 2rem;
+    margin-top: 2rem;
+}
+
+.card {
+    margin-bottom: 1.5rem;
+    border-radius: 16px;
+    box-shadow: 0 2px 12px rgba(106,17,203,0.10);
+    border: none;
+    background: linear-gradient(135deg, #f8fffa 0%, #e3e6f3 100%);
+}
+
+.card-title {
+    font-size: 1.5rem;
+    color: #2575fc;
+    font-weight: bold;
+}
+
+.card-text {
+    color: #444;
+}
+
+.btn-primary, .btn-success {
+    border-radius: 20px;
+    padding: 0.5rem 1.5rem;
+    background: linear-gradient(90deg, #6a11cb 0%, #2575fc 100%);
+    border: none;
+    color: #fff;
+    font-weight: 500;
+    box-shadow: 0 2px 8px rgba(106,17,203,0.10);
+}
+.btn-primary:hover, .btn-success:hover {
+    background: linear-gradient(90deg, #2575fc 0%, #6a11cb 100%);
+}
+
+.form-control {
+    border-radius: 10px;
+    border: 1px solid #6a11cb;
+}
+
+.alert-info {
+    border-radius: 10px;
+    background: linear-gradient(90deg, #6a11cb 0%, #2575fc 100%);
+    color: #fff;
+    font-weight: 500;
+    box-shadow: 0 2px 8px rgba(106,17,203,0.10);
+}
+
+#chat-box {
+    background: linear-gradient(135deg, #f8fffa 0%, #e3e6f3 100%);
+    border-radius: 10px;
+    box-shadow: 0 2px 8px rgba(106,17,203,0.10);
+    margin-bottom: 1rem;
+    padding: 1rem;
+    min-height: 300px;
+}
+
+.user-item {
+    cursor: pointer;
+    border-radius: 8px;
+    margin-bottom: 4px;
+    transition: background 0.2s;
+    background: linear-gradient(90deg, #f8fffa 0%, #e3e6f3 100%);
+    color: #2575fc;
+    font-weight: 500;
+}
+
+.user-item:hover, .user-item.active {
+    background: linear-gradient(90deg, #6a11cb 0%, #2575fc 100%);
+    color: #fff;
+}
+
+#chat-form .input-group {
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+@media (max-width: 600px) {
+    .container {
+        max-width: 100%;
+        padding: 0 8px;
+    }
+    #chat-box {
+        height: 200px !important;
+    }
+}

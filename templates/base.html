@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Blog</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+</head>
+<body {% if current_user.is_authenticated %}data-userid="{{ current_user.id }}"{% endif %}>
+<nav class="navbar navbar-expand-lg navbar-light bg-light">
+  <div class="container-fluid">
+    <a class="navbar-brand" href="/">Blog</a>
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+      <ul class="navbar-nav ms-auto mb-2 mb-lg-0">
+        {% if current_user.is_authenticated %}
+          <li class="nav-item"><a class="nav-link" href="/blog/new">New Blog</a></li>
+          <li class="nav-item position-relative">
+            <div class="nav-link dropdown p-0 d-flex align-items-center" id="chat-navbar-link" style="cursor:pointer; position:relative;">
+              <a href="/chat" id="chat-navbar-main" style="text-decoration:none; color:inherit;">
+                Chat
+                <span id="chat-navbar-badge" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style="display:none; font-size:0.8em;">New</span>
+              </a>
+              <span class="dropdown-toggle ms-1" data-bs-toggle="dropdown" aria-expanded="false"></span>
+              <ul class="dropdown-menu dropdown-menu-end" id="chat-notification-list" style="min-width:260px; max-height:320px; overflow-y:auto;">
+                <li><span class="dropdown-item-text text-muted">No new messages</span></li>
+              </ul>
+            </div>
+          </li>
+          <li class="nav-item"><a class="nav-link" href="/friends">Friends</a></li>
+          <li class="nav-item" style="display:flex; align-items:center;">
+            <a class="nav-link p-0" href="/profile" title="Profile">
+              <img src="{{ current_user.avatar if current_user.avatar and current_user.avatar|length > 10 else (current_user.gender == 'female' and '/static/default_avatar_female.jpg' or '/static/default_avatar_male.jpg') }}" class="rounded-circle" width="38" height="38" style="object-fit:cover; border:2px solid #2575fc;">
+            </a>
+          </li>
+          <li class="nav-item dropdown" style="display:flex; align-items:center;">
+            <a class="nav-link p-0" href="#" id="notificationDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false" style="display:flex; align-items:center;">
+              <span style="position:relative; display:inline-block; margin:0 18px;">
+                <i class="bi bi-bell-fill" style="font-size:1.7em; color:#ff9800; vertical-align:middle;"></i>
+                <span id="notification-count" class="badge bg-danger" style="position:absolute; top:-6px; right:-10px; font-size:0.8em; display:none;">0</span>
+              </span>
+            </a>
+            <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="notificationDropdown" id="notification-history" style="min-width:250px; max-height:300px; overflow-y:auto;">
+              <li><span class="dropdown-item-text text-muted">No notifications</span></li>
+            </ul>
+          </li>
+          <li class="nav-item"><a class="nav-link" href="/logout">Logout</a></li>
+        {% else %}
+          <li class="nav-item"><a class="nav-link" href="/login">Login</a></li>
+          <li class="nav-item"><a class="nav-link" href="/register">Register</a></li>
+        {% endif %}
+      </ul>
+    </div>
+  </div>
+</nav>
+<div class="container mt-4">
+    {% with messages = get_flashed_messages() %}
+      {% if messages %}
+        {% for message in messages %}
+          <div class="alert alert-info">{{ message }}</div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+    {% block content %}{% endblock %}
+</div>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+<script src="/static/js/notification.js"></script>
+</body>
+</html>

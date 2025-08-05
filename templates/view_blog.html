@@ -1,0 +1,36 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="card">
+  <div class="card-body">
+    <h3 class="card-title">{{ blog.title }}</h3>
+    <p class="card-text">{{ blog.content }}</p>
+    <p class="card-text"><small class="text-muted">By {{ author.username }} on {{ blog.timestamp.strftime('%Y-%m-%d %H:%M') if blog.timestamp else '' }}</small></p>
+    {% if current_user.is_authenticated and current_user.id == blog.author_id|string %}
+      <form method="POST" action="/blog/{{ blog._id|string }}/delete" style="display:inline;">
+        <button type="submit" class="btn btn-danger btn-sm">Delete Blog</button>
+      </form>
+    {% endif %}
+  </div>
+</div>
+
+<div class="mt-4">
+  <h5>Comments</h5>
+  {% for comment in comments %}
+    <div class="border rounded p-2 mb-2">
+      <img src="{{ comment.avatar_url }}" class="rounded-circle me-2" width="32" height="32" style="vertical-align:middle;"> <b>{{ comment.author_username }}</b>: {{ comment.content }}
+      <span class="text-muted" style="font-size:0.9em;">{{ comment.timestamp.strftime('%Y-%m-%d %H:%M') if comment.timestamp else '' }}</span>
+    </div>
+  {% else %}
+    <p>No comments yet.</p>
+  {% endfor %}
+  <form method="POST" action="/blog/{{ blog._id|string }}/comment">
+    <div class="mb-2">
+      <textarea name="comment" class="form-control" rows="2" placeholder="Write a comment..." {% if not current_user.is_authenticated %}disabled{% endif %}></textarea>
+    </div>
+    <button type="submit" class="btn btn-primary" {% if not current_user.is_authenticated %}disabled{% endif %}>Add Comment</button>
+  </form>
+  {% if not current_user.is_authenticated %}
+    <p><a href="/login">Login</a> to comment.</p>
+  {% endif %}
+</div>
+{% endblock %}
